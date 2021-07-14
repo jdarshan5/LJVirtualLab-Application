@@ -60,7 +60,6 @@ class Login extends React.Component {
                                     },
                                 }).then(async res => {
                                     if(res.status == 200) {
-                                        // console.log(toString(res.data.id));
                                         await AsyncStorage.setItem('university_id', (res.data.id).toString());
                                     }
                                 }).catch(errors => {

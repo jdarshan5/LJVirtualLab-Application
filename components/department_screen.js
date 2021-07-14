@@ -17,18 +17,6 @@ class Department extends React.Component {
 
     componentDidMount = async () => {
         this.fetchDepartments();
-        // axios.get('http://79f502ad1517.ngrok.io/api/fetchDepartments/', {
-        //     params: {
-        //         'university': await AsyncStorage.getItem('university_id'),
-        //     }
-        // }).then(res => {
-        //     if(res.status == 200) {
-        //         console.log(res.data);
-        //         this.setState({ departments: res.data });
-        //     }
-        // }).catch(errors => {
-        //     console.log(errors);
-        // });
     }
 
     fetchDepartments = async () => {

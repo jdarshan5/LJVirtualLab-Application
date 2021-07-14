@@ -17,7 +17,11 @@ class Input extends React.Component{
     }
 
     componentDidMount = () => {
-        axios.get('http://79f502ad1517.ngrok.io/api/fetchPracticalValues/', {
+        this.fetchPracticalValues();
+    }
+
+    fetchPracticalValues = async () => {
+        await axios.get('http://79f502ad1517.ngrok.io/api/fetchPracticalValues/', {
             params: {
                 practical: this.state.practical_id,
             }
@@ -39,8 +43,10 @@ class Input extends React.Component{
 
     render() {
         let practicals = this.state.practical_values.map((value, index) => {
+            console.log(index, '>>');
             return (
                 <View 
+                    key={index}
                     style={{
                         paddingVertical: 10,
                         paddingHorizontal: 5,

@@ -3,9 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import Context from './context';
 import Department from './department_screen';
-import axios from 'axios';
 
 class Home extends React.Component {
     constructor(props) {

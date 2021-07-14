@@ -117,9 +117,13 @@ class SignUp extends React.Component {
         axios.post('http://79f502ad1517.ngrok.io/api/register/', form).then(res => {
             if(res.status == 200) {
                 console.log(res.data);
-                alert('Your Accont Has Been Registered, Please Wait Untill You Are Approved.');
-                const { navigation } = this.state;
-                navigation.goBack();
+                if(res.data == 0) {
+                    alert('Your Accont Has Been Registered, Please Wait Untill You Are Approved.');
+                    const { navigation } = this.state;
+                    navigation.goBack();
+                } else {
+                    alert(Object.values(res.data));
+                }
             }
         }).catch(errors => {
             console.log(errors);
