@@ -1,35 +1,44 @@
 import React from 'react';
-import { View, Text, Image, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, Image, FlatList, TouchableOpacity, RefreshControl, ScrollView } from 'react-native';
 
 import axios from 'axios';
 
-import IoniconsIcon from 'react-native-vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-class Subject extends React.Component {
+class Course extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
             navigation: props.navigation,
             refreshing: false,
-            department: props.route.params.department,
-            subjects: [],
+            courses: [],
+            department_id: 0,
         }
     }
 
     componentDidMount = () => {
-        console.log(this.state.department);
-        this.fetchSubjects();
+        this.setState({ refreshing: true }, () => {
+            this.fetchCourses().then(() => {
+                this.setState({ refreshing: false });
+            });
+        });
     }
 
-    fetchSubjects = async () => {
-        await axios.get('http://79f502ad1517.ngrok.io/api/fetchSubjects/', {
+    fetchCourses = async () => {
+        const token = await AsyncStorage.getItem('token');
+        const department_id = await AsyncStorage.getItem('department_id');
+        await axios.get('https://jdarshan1210.pythonanywhere.com/university/api/fetchCourses/', {
             params: {
-                department: this.state.department,
-            }
+                department_id: department_id,
+            },
+            headers: {
+                'Authorization': 'Token ' + token,
+                'Content-Type': 'application/json',
+            },
         }).then(res => {
             if(res.status == 200) {
-                console.log(res.data);
-                this.setState({ subjects: res.data });
+                // console.log(res.data);
+                this.setState({ courses: res.data });
             }
         }).catch(errors => {
             console.log(errors);
@@ -41,31 +50,30 @@ class Subject extends React.Component {
         navigation.goBack();
     }
 
-    renderSubjects = ({ item }) => {
+    renderCourses = ({ item }) => {
         return(
             <View 
                 style={{
                     paddingVertical: 10,
                     paddingHorizontal: 5,
                     marginVertical: 5,
-                    borderWidth: 1,
-                    borderRadius: 10,
+                    borderBottomWidth: 1,
                 }}>
                 <TouchableOpacity
                     onPress={() => {
                         const { navigation } = this.state;
                         navigation.navigate('practical', {
-                            subject: item.id,
+                            course_id: item.id,
                         });
                     }}
                     >
                     <Text
                         style={{
                             fontSize: 18,
-                            textAlign: 'center',
+                            textAlign: 'left',
                         }}
                         >
-                        {item.sub_name}, {item.sub_code}
+                        {item.courses_name}, {item.courses_code}
                     </Text>
                 </TouchableOpacity>
             </View>
@@ -92,21 +100,13 @@ class Subject extends React.Component {
                             flexDirection: 'row',
                             alignItems: 'center',
                         }}>
-                        <IoniconsIcon 
-                            name='arrow-back'
-                            size={20} 
-                            style={{
-                                paddingRight: 10,
-                            }}
-                            onPress={this.navigateBack}
-                            />
                         <Text
                             style={{
                                 fontSize: 22,
                                 fontWeight: '700',
                             }}
                             >
-                            Subjects
+                            Courses
                         </Text>
                     </View>
                     <Image 
@@ -116,20 +116,46 @@ class Subject extends React.Component {
                             width: 30,
                         }}/>
                 </View>
-                {this.state.subjects.length == 0 ?
+                {this.state.courses.length == 0 ?
                     <View 
                         style={{
                             flex: 1,
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                        }}>
-                        <Text
+                        }}
+                        >
+                        <ScrollView
                             style={{
-                                fontSize: 20,
+                                flex: 1,
                             }}
+                            refreshControl={
+                                <RefreshControl 
+                                    enabled={true}
+                                    refreshing={this.state.refreshing}
+                                    onRefresh={() => {
+                                        this.setState({ refreshing : true });
+                                        console.log('refreshing');
+                                        this.fetchCourses().then(() => {
+                                            this.setState({ refreshing: false });
+                                        });
+                                    }}
+                                    />
+                            }
                             >
-                            No Subjects Yet
-                        </Text>
+                            <View
+                                style={{
+                                    flex: 1,
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                }}
+                                >
+                                <Text
+                                    style={{
+                                        fontSize: 18,
+                                    }}
+                                    >
+                                    {this.state.refreshing ? null : 'No Courses Available' }
+                                </Text>
+                            </View>
+                        </ScrollView>
                     </View>
                     :
                     <View 
@@ -139,8 +165,8 @@ class Subject extends React.Component {
                         }}
                         >
                         <FlatList 
-                            data={this.state.subjects}
-                            renderItem={this.renderSubjects}
+                            data={this.state.courses}
+                            renderItem={this.renderCourses}
                             keyExtractor={item => item.id}
                             refreshControl={
                                 <RefreshControl 
@@ -149,7 +175,7 @@ class Subject extends React.Component {
                                     onRefresh={() => {
                                         this.setState({ refreshing : true });
                                         console.log('refreshing');
-                                        this.fetchSubjects().then(() => {
+                                        this.fetchCourses().then(() => {
                                             this.setState({ refreshing: false });
                                         });
                                     }}
@@ -163,4 +189,4 @@ class Subject extends React.Component {
     }
 }
 
-export default Subject;
+export default Course;

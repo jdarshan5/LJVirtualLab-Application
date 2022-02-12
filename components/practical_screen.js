@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity, FlatList, RefreshControl } from 'react-native';
+import { View, Text, Image, TouchableOpacity, FlatList, RefreshControl, ScrollView } from 'react-native';
 
 import axios from 'axios';
 
 import IoniconsIcon from 'react-native-vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 class Practical extends React.Component {
     constructor(props) {
@@ -11,23 +12,32 @@ class Practical extends React.Component {
         this.state = {
             navigation: props.navigation,
             refreshing: false,
-            subject: props.route.params.subject,
+            course_id: props.route.params.course_id,
             practicals: [],
         };
     }
 
     componentDidMount = () => {
-        this.fetchPracticals();
+        this.setState({ refreshing: true }, () => {
+            this.fetchPracticals().then(() => {
+                this.setState({ refreshing: false });
+            });
+        });
     }
 
     fetchPracticals = async () => {
-        await axios.get('http://79f502ad1517.ngrok.io/api/fetchPracticals/', {
+        const token = await AsyncStorage.getItem('token');
+        await axios.get('https://jdarshan1210.pythonanywhere.com/practical/api/fetchPracticals/', {
             params: {
-                subject: this.state.subject,
-            }
+                course_id: this.state.course_id,
+            },
+            headers: {
+                'Authorization': 'Token ' + token,
+                'Content-Type': 'application/json',
+            },
         }).then(res => {
             if(res.status == 200) {
-                console.log(res.data);
+                // console.log(res.data);
                 this.setState({ practicals: res.data });
             }
         }).catch(errors => {
@@ -47,8 +57,7 @@ class Practical extends React.Component {
                     paddingVertical: 10,
                     paddingHorizontal: 5,
                     marginVertical: 5,
-                    borderWidth: 1,
-                    borderRadius: 10,
+                    borderBottomWidth: 1,
                 }}>
                 <TouchableOpacity
                     onPress={() => {
@@ -56,15 +65,19 @@ class Practical extends React.Component {
                         navigation.navigate('practicalDetail', {
                             practical_id: item.id,
                             practical_name: item.practical_name,
-                            practical_link: item.yt_link,
-                            practical_file: item.excel_file,
+                            practical_feature_image: item.practical_feature_image,
+                            practical_procedure: item.practical_procedure,
+                            practical_application: item.practical_application,
+                            practical_advantages: item.practical_advantages,
+                            practical_conclusion: item.practical_conclusion,
+                            practical_calculation: item.practical_calculation,
                         });
                     }}
                     >
                     <Text
                         style={{
                             fontSize: 18,
-                            textAlign: 'center',
+                            // textAlign: 'center',
                         }}
                         >
                         {item.practical_name}
@@ -122,16 +135,42 @@ class Practical extends React.Component {
                     <View 
                         style={{
                             flex: 1,
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                        }}>
-                        <Text
+                        }}
+                        >
+                        <ScrollView
                             style={{
-                                fontSize: 20,
+                                flex: 1,
                             }}
+                            refreshControl={
+                                <RefreshControl 
+                                    enabled={true}
+                                    refreshing={this.state.refreshing}
+                                    onRefresh={() => {
+                                        this.setState({ refreshing : true });
+                                        console.log('refreshing');
+                                        this.fetchPracticals().then(() => {
+                                            this.setState({ refreshing: false });
+                                        });
+                                    }}
+                                    />
+                            }
                             >
-                            No Practicals Yet
-                        </Text>
+                            <View
+                                style={{
+                                    flex: 1,
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                }}
+                                >
+                                <Text
+                                    style={{
+                                        fontSize: 18,
+                                    }}
+                                    >
+                                    {this.state.refreshing ? null : 'No Practicals Available' }
+                                </Text>
+                            </View>
+                        </ScrollView>
                     </View>
                     :
                     <View 

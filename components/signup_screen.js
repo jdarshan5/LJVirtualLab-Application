@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ToastAndroid, Image } from 'react-native';
 
-import { Picker } from '@react-native-picker/picker';
+import IoniconsIcon from 'react-native-vector-icons/Ionicons';
 
 import Context from './context';
 import axios from 'axios';
@@ -14,49 +14,31 @@ class SignUp extends React.Component {
         super(props);
         this.state = {
             navigation: props.navigation,
+            selectedDepartmentId: props.route.params.selectedDepartmentId,
+            selectedDepartmentName: props.route.params.selectedDepartmentName,
+            selectedInstituteId: props.route.params.selectedInstituteId,
+            selectedInstituteName: props.route.params.selectedInstituteName,
+            selectedUniversityId: props.route.params.selectedUniversityId,
+            selectedUniversityName: props.route.params.selectedUniversityName,
             email: '',
-            first_name: '',
-            last_name: '',
+            name: '',
+            mobileNumber: 0,
             enrollmentNumber: 0,
             password: '',
             password2: '',
-            selectedUniversity: 0,
-            universities: [
-                {
-                    'id': 0,
-                    'univ_name': 'Select University',
-                }],
         };
-    }
-
-    componentDidMount = () => {
-        axios.get('http://79f502ad1517.ngrok.io/api/fetchUniversities/').then(res => {
-            if(res.status == 200) {
-                console.log(res.data);
-                this.setState({ universities: this.state.universities.concat(res.data) });
-            }
-        }).catch(errors => {
-            console.log(errors);
-        });
-    }
-
-    setSelectedUniversity = (itemValue) => {
-        console.log(itemValue, typeof(itemValue));
-        this.setState({ selectedUniversity: itemValue }, () => {
-            console.log(this.state.selectedUniversity);
-        });
     }
 
     setEmail = (value) => {
         this.setState({ email: value});
     }
 
-    setFirstName = (value) => {
-        this.setState({ first_name: value});
+    setName = (value) => {
+        this.setState({ name: value});
     }
 
-    setLastName = (value) => {
-        this.setState({ last_name: value});
+    setMobileNumber = (value) => {
+        this.setState({ mobileNumber: value });
     }
 
     setEnrollmentNumber = (value) => {
@@ -73,183 +55,223 @@ class SignUp extends React.Component {
 
     handleSignUp = async () => {
         if(this.state.email == '') {
-            alert('Enter Email');
+            ToastAndroid.show('Enter Email', ToastAndroid.SHORT);
             return;
         }
-        if(this.state.first_name == '') {
-            alert('Enter First Name');
+        if(this.state.name == '') {
+            ToastAndroid.show('Enter Your Full Name', ToastAndroid.SHORT);
             return;
         }
-        if(this.state.last_name == '') {
-            alert('Enter Last Name');
+        if(this.state.mobileNumber == 0) {
+            ToastAndroid.show('Enter Mobile Number', ToastAndroid.SHORT);
             return;
         }
-        if(this.state.enrollmentNumber == '') {
-            alert('Enter Enrollment Number');
+        if(this.state.mobileNumber.toString().length != 10) {
+            ToastAndroid.show('Mobile Number Should Be Of 10 Digit', ToastAndroid.SHORT);
+            return;
+        }
+        if(this.state.enrollmentNumber == 0) {
+            ToastAndroid.show('Enter Enrollment Number', ToastAndroid.SHORT);
             return;
         }
         if(this.state.enrollmentNumber.toString().length != 12) {
-            alert('Enrollment Number Should Be Of 12 Digit');
+            ToastAndroid.show('Enrollment Number Should Be Of 12 Digit', ToastAndroid.SHORT);
+            return;
         }
         if(this.state.password == '') {
-            alert('Enter Password');
+            ToastAndroid.show('Enter Password', ToastAndroid.SHORT);
             return;
         }
         if(this.state.password2 == '') {
-            alert('Enter Confirm Password');
+            ToastAndroid.show('Enter Confirm Password', ToastAndroid.SHORT);
             return;
         }
         if(this.state.password != this.state.password2) {
-            alert('Passwords Does Not Match!');
+            ToastAndroid.show('Passwords Does Not Match!', ToastAndroid.SHORT);
         }
-        if(this.state.selectedUniversity == 0) {
-            alert('Select A University');
-            return;
-        }
-        const form = new FormData();
-        form.append('email', this.state.email);
-        form.append('first_name', this.state.first_name);
-        form.append('last_name', this.state.last_name);
-        form.append('enrollment', this.state.enrollmentNumber);
-        form.append('university', this.state.selectedUniversity);
-        form.append('password', this.state.password);
-        form.append('password2', this.state.password2);
-        axios.post('http://79f502ad1517.ngrok.io/api/register/', form).then(res => {
-            if(res.status == 200) {
-                console.log(res.data);
-                if(res.data == 0) {
-                    alert('Your Accont Has Been Registered, Please Wait Untill You Are Approved.');
-                    const { navigation } = this.state;
-                    navigation.goBack();
-                } else {
-                    alert(Object.values(res.data));
-                }
-            }
-        }).catch(errors => {
-            console.log(errors);
+        const { navigation } = this.state;
+        navigation.navigate('detailFormSignup', {
+            selectedDepartmentId: this.state.selectedDepartmentId,
+            selectedDepartmentName: this.state.selectedDepartmentName,
+            selectedInstituteId: this.state.selectedInstituteId,
+            selectedInstituteName: this.state.selectedInstituteName,
+            selectedUniversityId: this.state.selectedUniversityId,
+            selectedUniversityName: this.state.selectedUniversityName,
+            email: this.state.email,
+            password: this.state.password,
+            password2: this.state.password2,
+            name: this.state.name,
+            mobile_number: this.state.mobileNumber,
+            enrollment_number: this.state.enrollmentNumber,
         });
     }
 
+    navigateBack = () => {
+        const { navigation } = this.state;
+        navigation.goBack();
+    }
+
     render() {
-        let university_list = this.state.universities.map((value, index) => {
-            return <Picker.Item label={value.univ_name} value={value.id} key={value.id} />
-        });
         return(
             <View 
                 style={{
                     flex: 1,
-                    justifyContent: 'center',
-                    alignItems: 'center',
+                    // justifyContent: 'center',
+                    // alignItems: 'center',
                     backgroundColor: '#FFF',
                 }}
                 >
                 <View
                     style={{
-                        margin: 20,
-                    }}>
-                    <Text
-                        style={{
-                            fontSize: 25,
-                            fontWeight: 'bold',
-                        }}>
-                        Sign Up
-                    </Text>
-                </View>
-                <View 
-                    style={{
-                        width: '85%',
+                        margin: 15,
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexDirection: 'row',
                     }}
                     >
-                    <TextInput 
-                        placeholder="EMAIL"
-                        keyboardType='email-address'
-                        autoCapitalize='none'
-                        placeholderTextColor="#AAA"
+                    <View 
                         style={{
-                            marginVertical: 5,
-                            borderBottomWidth: 1,
-                            color: '#000'
-                        }}
-                        onChangeText={this.setEmail}
-                        />
-                    <TextInput 
-                        placeholder="FIRST NAME"
-                        placeholderTextColor="#AAA"
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                        }}>
+                        <IoniconsIcon 
+                            name='arrow-back'
+                            size={20} 
+                            style={{
+                                paddingRight: 10,
+                            }}
+                            onPress={this.navigateBack}
+                            />
+                        <Text
+                            style={{
+                                fontSize: 22,
+                                fontWeight: '700',
+                            }}
+                            >
+                            SIGN UP
+                        </Text>
+                    </View>
+                    <Image 
+                        source={require('../static/lj_logo.png')} 
                         style={{
-                            marginVertical: 5,
-                            borderBottomWidth: 1,
-                            color: '#000'
-                        }}
-                        onChangeText={this.setFirstName}
-                        />
-                    <TextInput 
-                        placeholder="LAST NAME"
-                        placeholderTextColor="#AAA"
-                        style={{
-                            marginVertical: 5,
-                            borderBottomWidth: 1,
-                            color: '#000'
-                        }}
-                        onChangeText={this.setLastName}
-                        />
-                    <TextInput 
-                        placeholder="ENROLLMENT NUMBER"
-                        keyboardType='number-pad'
-                        placeholderTextColor="#AAA"
-                        style={{
-                            marginVertical: 5,
-                            borderBottomWidth: 1,
-                            color: '#000'
-                        }}
-                        onChangeText={this.setEnrollmentNumber}
-                        />
-                    <TextInput 
-                        placeholder="PASSWORD"
-                        secureTextEntry={true}
-                        placeholderTextColor="#AAA"
-                        style={{
-                            marginVertical: 5,
-                            borderBottomWidth: 1,
-                            color: '#000'
-                        }}
-                        onChangeText={this.setPassword}
-                        />
-                    <TextInput 
-                        placeholder="CONFIRM PASSWORD"
-                        secureTextEntry={true}
-                        placeholderTextColor="#AAA"
-                        style={{
-                            marginVertical: 5,
-                            borderBottomWidth: 1,
-                            color: '#000'
-                        }}
-                        onChangeText={this.setPassword2}
-                        />
-                    <Picker
-                        selectedValue={this.state.selectedUniversity}
-                        onValueChange={this.setSelectedUniversity}
-                        mode='dropdown'
-                        style={{
-                            color: '#000',
-                        }}
-                        >
-                        {university_list}
-                    </Picker>
+                            height: 30,
+                            width: 30,
+                        }}/>
                 </View>
                 <View
                     style={{
-                        margin: 20,
-                    }}>
-                    <TouchableOpacity
-                        onPress={this.handleSignUp}
-                        >
+                        flex: 1,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                    }}
+                    >
+                    {/* <View
+                        style={{
+                            margin: 20,
+                            width: '85%',
+                        }}>
                         <Text
                             style={{
-                                fontSize: 16,
+                                fontSize: 25,
                             }}>
-                            Click To Sign Up
+                            Sign Up
                         </Text>
-                    </TouchableOpacity>
+                    </View> */}
+                    <View 
+                        style={{
+                            width: '85%',
+                        }}
+                        >
+                        <TextInput 
+                            placeholder="EMAIL"
+                            keyboardType='email-address'
+                            autoCapitalize='none'
+                            placeholderTextColor="#AAA"
+                            style={{
+                                marginVertical: 5,
+                                borderBottomWidth: 1,
+                                color: '#000'
+                            }}
+                            onChangeText={this.setEmail}
+                            />
+                        <TextInput 
+                            placeholder="FIRSTNAME MIDDLENAME LASTNAME"
+                            placeholderTextColor="#AAA"
+                            style={{
+                                marginVertical: 5,
+                                borderBottomWidth: 1,
+                                color: '#000'
+                            }}
+                            onChangeText={this.setName}
+                            />
+                        <TextInput 
+                            placeholder="Mobile Number"
+                            keyboardType='number-pad'
+                            placeholderTextColor="#AAA"
+                            maxLength={10}
+                            style={{
+                                marginVertical: 5,
+                                borderBottomWidth: 1,
+                                color: '#000'
+                            }}
+                            onChangeText={this.setMobileNumber}
+                            />
+                        <TextInput 
+                            placeholder="ENROLLMENT NUMBER"
+                            keyboardType='number-pad'
+                            placeholderTextColor="#AAA"
+                            maxLength={12}
+                            style={{
+                                marginVertical: 5,
+                                borderBottomWidth: 1,
+                                color: '#000'
+                            }}
+                            onChangeText={this.setEnrollmentNumber}
+                            />
+                        <TextInput 
+                            placeholder="PASSWORD"
+                            secureTextEntry={true}
+                            placeholderTextColor="#AAA"
+                            style={{
+                                marginVertical: 5,
+                                borderBottomWidth: 1,
+                                color: '#000'
+                            }}
+                            onChangeText={this.setPassword}
+                            />
+                        <TextInput 
+                            placeholder="CONFIRM PASSWORD"
+                            secureTextEntry={true}
+                            placeholderTextColor="#AAA"
+                            style={{
+                                marginVertical: 5,
+                                borderBottomWidth: 1,
+                                color: '#000'
+                            }}
+                            onChangeText={this.setPassword2}
+                            />
+                    </View>
+                    <View
+                        style={{
+                            margin: 20,
+                            padding: 10,
+                            width: '80%',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            borderWidth: 0.5,
+                            borderRadius: 50,
+                        }}>
+                        <TouchableOpacity
+                            onPress={this.handleSignUp}
+                            >
+                            <Text
+                                style={{
+                                    fontSize: 20,
+                                }}>
+                                CONTINUE
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </View>
         )

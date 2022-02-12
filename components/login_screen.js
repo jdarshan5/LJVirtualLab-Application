@@ -1,7 +1,10 @@
 import React from 'react';
-import { View,Text, TextInput, TouchableOpacity, ToastAndroid } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ToastAndroid, Image } from 'react-native';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Bar } from 'react-native-progress';
+import FeatherIcon from 'react-native-vector-icons/Feather';
+import IoniconsIcon from 'react-native-vector-icons/Ionicons';
 
 import Context from './context';
 import axios from 'axios';
@@ -16,6 +19,7 @@ class Login extends React.Component {
             navigation: props.navigation,
             email: '',
             password: '',
+            isLoading: false,
         }
     }
 
@@ -29,54 +33,75 @@ class Login extends React.Component {
 
     handleLogIn = () => {
         if(this.state.email == '' || this.state.password == '') {
-            ToastAndroid.show('Enter Credentials.', ToastAndroid.LONG);
+            ToastAndroid.show('Enter Credentials', ToastAndroid.LONG);
             return;
         }
-        axios.get('http://79f502ad1517.ngrok.io/api/checkApproval/', {
-            params: {
-                email: this.state.email,
-            }
-        }).then(res => {
-            if(res.status == 200) {
-                if(typeof(res.data) == 'object') {
-                    ToastAndroid.show('Email Has Not Been Registered', ToastAndroid.LONG);
-                    return;
-                } else if(typeof(res.data) == 'number') {
-                    if(res.data == 0) {
-                        ToastAndroid.show('Your Email Id Has Not Been Approved Yet \nPlease Contact Your Mentor.', ToastAndroid.LONG);
+        this.setState({ isLoading: true }, () => {
+            axios.get('https://jdarshan1210.pythonanywhere.com/user/api/fetchUserApproval/', {
+                params: {
+                    email: this.state.email,
+                }
+            }).then(res => {
+                if(res.status == 200) {
+                    if(typeof(res.data) == 'object') {
+                        ToastAndroid.show('No Record Found For That Email,\nPlease Sign Up.', ToastAndroid.CENTER);
+                        this.setState({ isLoading: false });
                         return;
-                    } else {
-                        const form = new FormData();
-                        form.append('username', this.state.email);
-                        form.append('password', this.state.password);
-                        axios.post('http://79f502ad1517.ngrok.io/api/login/', form).then(async res => {
-                            if(res.status == 200) {
-                                const { setIsLoggedIn } = this.context;
-                                await AsyncStorage.setItem('token', res.data.token);
-                                await axios.get('http://79f502ad1517.ngrok.io/api/fetchUniversityByStudent/', {
-                                    headers: {
-                                        'Authorization': 'Token ' + res.data.token,
-                                        'Content-Type': 'application/json',
-                                    },
-                                }).then(async res => {
-                                    if(res.status == 200) {
-                                        await AsyncStorage.setItem('university_id', (res.data.id).toString());
-                                    }
-                                }).catch(errors => {
-                                    console.log(errors);
-                                });
-                                setIsLoggedIn(true);
-                            }
-                        }).catch(errors => {
-                            console.log(errors);
+                    } else if(typeof(res.data) == 'number') {
+                        if(res.data == 0) {
+                            ToastAndroid.show('Your Email Id Has Not Been Approved Yet,\nPlease Contact Your Mentor.', ToastAndroid.LONG);
+                            this.setState({ isLoading: false });
                             return;
-                        })
+                        } else {
+                            const form = new FormData();
+                            form.append('username', this.state.email);
+                            form.append('password', this.state.password);
+                            axios.post('https://jdarshan1210.pythonanywhere.com/user/api/login/', form).then(async res => {
+                                if(res.status == 200) {
+                                    const { setIsLoggedIn } = this.context;
+                                    await AsyncStorage.setItem('token', res.data.token);
+                                    await axios.get('https://jdarshan1210.pythonanywhere.com/university/api/fetchEducationalInfo/', {
+                                        headers: {
+                                            'Authorization': 'Token ' + res.data.token,
+                                            'Content-Type': 'application/json',
+                                        },
+                                    }).then(async res => {
+                                        if(res.status == 200) {
+                                            await AsyncStorage.setItem('university_id', res.data.university_id.toString()).then(async () => {
+                                                await AsyncStorage.setItem('institute_id', res.data.institute_id.toString()).then(async () => {
+                                                    await AsyncStorage.setItem('department_id', res.data.department_id.toString());
+                                                });
+                                            });
+                                        }
+                                    }).catch(errors => {
+                                        console.log(errors);
+                                        ToastAndroid.show('Error fetching user info', ToastAndroid.SHORT);
+                                    });
+                                    setIsLoggedIn(true);
+                                }
+                            }).catch(errors => {
+                                console.log(errors);
+                                ToastAndroid.show('Login error', ToastAndroid.SHORT);
+                                this.setState({ isLoading: false });
+                                return;
+                            })
+                        }
                     }
                 }
-            }
-        }).catch(errors => {
-            console.log(errors);
-            return;
+            }).catch(errors => {
+                if(errors.response.status == 400) {
+                    let error_msg = '';
+                    for(let e in errors.response.data) {
+                        error_msg += e + ': ' + errors.response.data[e][0] + '\n';
+                    }
+                    alert(error_msg);
+                } else {
+                    console.log(errors);
+                }
+                ToastAndroid.show('Technical Erro', ToastAndroid.SHORT);
+                this.setState({ isLoading: false });
+                return;
+            });
         });
     }
 
@@ -85,76 +110,142 @@ class Login extends React.Component {
         navigation.navigate('signup');
     }
 
+    navigateBack = () => {
+        const { navigation } = this.state;
+        navigation.goBack();
+    }
+
     render() {
+        if(this.state.isLoading) {
+            return(
+                <View
+                    style={{
+                        flex: 1,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                    }}
+                    >
+                    <Bar 
+                        indeterminate={true}
+                        width={250}
+                        height={1}
+                        color='#000'
+                        />
+                    <Text>
+                        LOADING
+                    </Text>
+                </View>
+            )
+        }
         return(
             <View 
                 style={{
                     flex: 1,
-                    justifyContent: 'center',
-                    alignItems: 'center',
                     backgroundColor: '#FFF',
                 }}
                 >
-                <View 
+                <View
                     style={{
-                        margin: 20,
+                        margin: 15,
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexDirection: 'row',
                     }}
                     >
-                    <Text
+                    <View 
                         style={{
-                            fontSize: 25,
-                            fontWeight: 'bold',
+                            flexDirection: 'row',
+                            alignItems: 'center',
                         }}>
-                        Login
-                    </Text>
-                </View>
-                <View 
-                    style={{
-                        width: '85%',
-                    }}
-                    >
-                    <TextInput 
-                        placeholder="EMAIL"
-                        keyboardType='email-address'
-                        autoCapitalize='none'
-                        placeholderTextColor="#AAA"
-                        style={{
-                            marginVertical: 5,
-                            borderBottomWidth: 1,
-                            color: '#000'
-                        }}
-                        onChangeText={this.setEmail}
-                        />
-                    <TextInput 
-                        placeholder="PASSWORD"
-                        secureTextEntry={true}
-                        placeholderTextColor="#AAA"
-                        style={{
-                            marginVertical: 5,
-                            borderBottomWidth: 1,
-                            color: '#000'
-                        }}
-                        onChangeText={this.setPassword}
-                        />
-                </View>
-                <View 
-                    style={{
-                        margin: 20,
-                    }}
-                    >
-                    <TouchableOpacity
-                        onPress={this.handleLogIn}
-                        >
+                        <IoniconsIcon 
+                            name='arrow-back'
+                            size={20} 
+                            style={{
+                                paddingRight: 10,
+                            }}
+                            onPress={this.navigateBack}
+                            />
                         <Text
                             style={{
-                                fontSize: 16,
+                                fontSize: 22,
+                                fontWeight: '700',
                             }}
                             >
-                            Click To Login
+                            LOG IN
                         </Text>
-                    </TouchableOpacity>
+                    </View>
+                    <Image 
+                        source={require('../static/lj_logo.png')} 
+                        style={{
+                            height: 30,
+                            width: 30,
+                        }}/>
                 </View>
                 <View
+                    style={{
+                        flex: 1,
+                        justifyContent: 'center',
+                    }}
+                    >
+                    <View 
+                        style={{
+                            // width: '100%',
+                            marginHorizontal: 30,
+                        }}
+                        >
+                        <TextInput 
+                            placeholder="EMAIL"
+                            keyboardType='email-address'
+                            autoCapitalize='none'
+                            placeholderTextColor="#AAA"
+                            style={{
+                                marginVertical: 5,
+                                borderBottomWidth: 0.5,
+                                color: '#000'
+                            }}
+                            onChangeText={this.setEmail}
+                            editable={!this.state.isLoading}
+                            />
+                        <TextInput 
+                            placeholder="PASSWORD"
+                            secureTextEntry={true}
+                            placeholderTextColor="#AAA"
+                            style={{
+                                marginVertical: 5,
+                                borderBottomWidth: 0.5,
+                                color: '#000'
+                            }}
+                            onChangeText={this.setPassword}
+                            editable={!this.state.isLoading}
+                            />
+                    </View>
+                    <View 
+                        style={{
+                            marginVertical: 20,
+                            marginHorizontal: 40,
+                            padding: 10,
+                            width: '80%',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            borderWidth: 0.5,
+                            borderRadius: 50,
+                        }}
+                        >
+                        <TouchableOpacity
+                            onPress={this.handleLogIn}
+                            disabled={this.state.isLoading}
+                            >
+                            <Text
+                                style={{
+                                    fontSize: 20,
+                                }}
+                                >
+                                LOGIN
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+                {/* <View
                     style={{
                         position: 'absolute',
                         bottom: 30,
@@ -167,7 +258,7 @@ class Login extends React.Component {
                             Click To Sign Up
                         </Text>
                     </TouchableOpacity>
-                </View>
+                </View> */}
             </View>
         )
     }

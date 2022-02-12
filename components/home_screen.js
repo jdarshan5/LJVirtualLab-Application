@@ -3,21 +3,19 @@ import { View, Text, TouchableOpacity } from 'react-native';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import Department from './department_screen';
+import Course from './course_screen';
 
 class Home extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
             navigation: props.navigation,
-            departments: [],
         };
     }
 
     componentDidMount = async () => {
         const token = await AsyncStorage.getItem('token');
         console.log(token);
-        console.log(await AsyncStorage.getItem('university_id'));
     }
 
     navigateToProfileScreen = () => {
@@ -33,17 +31,21 @@ class Home extends React.Component {
                     backgroundColor: '#FFF',
                 }}
                 >
-                <Department navigation={this.state.navigation} />
+                <Course navigation={this.state.navigation} />
                 <View 
                     style={{
-                        padding: 10,
+                        padding: 15,
                         justifyContent: 'center',
                         alignItems: 'center',
                     }}>
                     <TouchableOpacity
                         onPress={this.navigateToProfileScreen}
                         >
-                        <Text>
+                        <Text
+                            style={{
+                                fontSize: 20,
+                            }}
+                            >
                             Profile
                         </Text>
                     </TouchableOpacity>
